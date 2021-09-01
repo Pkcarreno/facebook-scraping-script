@@ -4,6 +4,7 @@
 from __future__ import print_function, unicode_literals
 from datetime import datetime
 import os
+import sys
 from os.path import basename
 import re
 from pathlib import Path
@@ -353,21 +354,23 @@ class scrap_facebook_post:
                 file_name = "".join([post.title.replace(" ", "-"), ".", file_extension])
                 file_name = file_name.replace('"', "")
                 # show data
-                print("path: ", path)
-                print("file_extension: ", file_extension)
-                print("file_name: ", file_name)
                 # make path
                 local_filename = "".join([path, "\\", file_name])
                 os.makedirs(os.path.dirname(local_filename), exist_ok=True)
-                # Path(local_filename).mkdir(parents=True, exist_ok=True)
-                print("ruta: ", local_filename)
                 # get image
-                r = self.session.get(post.img_url, stream=True, verify=False)
                 with open(local_filename, "wb") as f:
+                    print("Descargando ", file_name)
+                    r = self.session.get(post.img_url, stream=True, verify=False)
+                    total_length = r.headers.get("content-length")
+                    dl = 0
+                    total_length = int(total_length)
                     for chunk in r.iter_content(chunk_size=1024):
+                        dl += len(chunk)
                         f.write(chunk)
-                post.img_path = local_filename
-                print("---")
+                        done = int(50 * dl / total_length)
+                        sys.stdout.write("\r[%s%s]" % ("█" * done, " " * (50 - done)))
+                        sys.stdout.flush()
+                print("\n")
             print("Descarga completa")
             self.hasImages = True
         else:
