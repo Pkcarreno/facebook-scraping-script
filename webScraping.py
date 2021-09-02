@@ -419,18 +419,18 @@ class scrap_facebook_post:
         if self.hasPost:
             for index, post in enumerate(self.posts):
                 print("Post Numero {} \n".format((index + 1)))
-                print("Titulo: {} \n".format(post.title)) if self.hasLinks else "",
-                print("Fecha: {} \n".format(post.date))
-                print("URL de la imagen: {} \n".format(post.date))
+                print("Titulo: {}".format(post.title)) if self.hasLinks else "",
+                print("Fecha: {}".format(post.date))
                 print(
-                    "URL externo: {} \n".format(post.external_link)
+                    "URL externo: {}".format(post.external_link)
                 ) if self.hasLinks else "",
                 print(
                     "Dirección de la imagen guardada: {} \n".format(post.img_path)
-                ) if self.hasImages else "",
+                ) if self.hasImages else print(),
                 print("Descripción:")
                 print(post.description)
                 print("---")
+                input()
                 print("\n \n")
         else:
             print("ERROR: Primero debe obtener los posts \n")
