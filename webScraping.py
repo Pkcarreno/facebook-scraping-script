@@ -177,29 +177,35 @@ class single_post:
         )
         print()
         print("Por favor, espere un momento mientras se consulta a la Wikipedia...\n")
-        artist = wikipedia.search(band_name, results=3)
         link = False
+        try:
+            artist = wikipedia.search(band_name, results=3)
+        except Exception:
+            artist = None
+
         if len(artist) > 0:
             wiki_options = list()
             options = list()
             for page in artist:
                 if not re.search("(disambiguation)", page):
-                    this_page_resume = wikipedia.summary(
-                        page, auto_suggest=False, sentences=1
-                    )
-                    wiki_options.append(this_page_resume)
-                    options.append(page)
-            for index, page in enumerate(artist):
-                if not re.search("(disambiguation)", page):
+                    try:
+                        this_page_resume = wikipedia.summary(
+                            page, auto_suggest=False, sentences=1
+                        )
+                        wiki_options.append([this_page_resume, page])
+                        options.append(page)
+                    except Exception:
+                        pass
+            for page in wiki_options:
+                if not re.search("(disambiguation)", page[1]):
                     print("Entradas encontradas")
-                    print("- {}".format(page))
-                    print("descripción: ", wiki_options[index])
+                    print("- {}".format(page[1]))
+                    print("descripción: ", page[0])
                     print("---------------------")
             #
             options.append("Colocar el link")
             #
             wiki_option_selected = inputs.select(options, "Elija la opción correcta")
-            print(wiki_option_selected)
             if wiki_option_selected != "Colocar el link".lower():
                 try:
                     wiki_url = wikipedia.page(
@@ -214,11 +220,12 @@ class single_post:
                         {"key": "0", "name": "Colocar el link", "value": False},
                     ]
                     link = inputs.expand(options2)
-                except:
+                except Exception:
                     try:
-                        print("Espere un poco mas por favor...")
                         newAttempt = wikipedia.search(band_name, results=3)
-                        item_id = newAttempt.index(wiki_option_selected)
+                        for index, name in enumerate(newAttempt):
+                            if name.lower() == wiki_option_selected:
+                                item_id = index
                         wiki_url = wikipedia.page(
                             newAttempt[item_id], auto_suggest=False
                         ).url
@@ -231,7 +238,7 @@ class single_post:
                             {"key": "0", "name": "Colocar el link", "value": False},
                         ]
                         link = inputs.expand(options2)
-                    except:
+                    except Exception:
                         print(
                             "Hubo un error al buscar la pagina de wikipedia, por favor ingrese el link manualmente\n"
                         )
@@ -491,13 +498,31 @@ if __name__ == "__main__":
             # for page in wikipedia.search("Oasis", results=3):
             #     if not re.search("(disambiguation)", page):
             #         print(wikipedia.summary(page, auto_suggest=False, sentences=1))
-            text = "Sterling Morrison"
-            newAttempt = wikipedia.search(text, results=3)
-            print(newAttempt)
-            item_id = newAttempt.index(text)
-            print(item_id)
-            wiki_url = wikipedia.page(newAttempt[item_id], auto_suggest=False).url
-            print(wiki_url)
+
+            # text = "Sterling Morrison"
+            # newAttempt = wikipedia.search(text, results=3)
+            # print(newAttempt)
+            # # item_id = newAttempt.index(text)
+            # for index, name in enumerate(newAttempt):
+            #     if name.lower() == "sterling morrison":
+            #         item_id = index
+            # print(item_id)
+            # wiki_url = wikipedia.page(newAttempt[item_id], auto_suggest=False).url
+            # print(wiki_url)
+            search = wikipedia.search("Alphaville", results=3)
+            this_page_resume = list()
+            indexes_list = list()
+            for index, name in enumerate(search):
+                try:
+                    this_page_resume.append(
+                        wikipedia.summary(name, auto_suggest=False, sentences=1)
+                    )
+                    indexes_list.append(index)
+                except Exception:
+                    pass
+            print(search)
+            print(this_page_resume)
+            print(indexes_list)
 
         # --------- proceso de minado de texto
         # --------- subir a WordPress
