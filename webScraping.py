@@ -3,6 +3,7 @@
 # system management
 from __future__ import print_function, unicode_literals
 from datetime import datetime
+import enum
 import os
 import sys
 from os.path import basename
@@ -160,7 +161,7 @@ class single_post:
                         cursor_position=len(document.text),
                     )
 
-        post_title = inputs.input_field("Titulo del post", TitleValidator)
+        post_title = self.inputs.input_field("Titulo del post", TitleValidator)
         self.title = post_title
 
     def get_external_link(self):
@@ -180,12 +181,11 @@ class single_post:
                         cursor_position=len(document.text),
                     )
 
-        inputs = inputs_form()
-        band_name = inputs.input_field(
+        band_name = self.inputs.input_field(
             "Nombre del artista o evento a reemplazar por el link externo",
             nameExternalLinkReplace,
         )
-        is_author = inputs.confirm(
+        is_author = self.inputs.confirm(
             "Este es el nombre de algún grupo, artista o evento destacado del rock?"
         )
         print()
@@ -196,17 +196,23 @@ class single_post:
         except Exception:
             artist = None
 
-        if len(artist) > 0:
+        if artist and len(artist) > 0:
             wiki_options = list()
             options = list()
-            for page in artist:
+            for index, page in enumerate(artist):
                 if not re.search("(disambiguation)", page):
                     try:
                         this_page_resume = wikipedia.summary(
                             page, auto_suggest=False, sentences=1
                         )
                         wiki_options.append([this_page_resume, page])
-                        options.append(page)
+                        options.append(
+                            {
+                                "key": index,
+                                "name": page,
+                                "value": index,
+                            }
+                        )
                     except Exception:
                         pass
             for page in wiki_options:
@@ -216,13 +222,19 @@ class single_post:
                     print("descripción: ", page[0])
                     print("---------------------")
             #
-            options.append("Colocar el link")
+            options.append(
+                {
+                    "key": 9999999,
+                    "name": "Colocar el link",
+                    "value": "Colocar el link",
+                }
+            )
             #
-            wiki_option_selected = inputs.select(options, "Elija la opción correcta")
+            wiki_option_selected = self.inputs.select(options, "Elija la opción correcta")
             if wiki_option_selected != "Colocar el link".lower():
                 try:
                     wiki_url = wikipedia.page(
-                        wiki_option_selected, auto_suggest=False
+                        artist[wiki_option_selected], auto_suggest=False
                     ).url
                     options2 = [
                         {
@@ -232,29 +244,31 @@ class single_post:
                         },
                         {"key": "0", "name": "Colocar el link", "value": False},
                     ]
-                    link = inputs.expand(options2, "cual de estos links le funciona?")
+                    link = self.inputs.expand(
+                        options2, "cual de estos links le funciona?"
+                    )
                 except Exception:
-                    try:
-                        newAttempt = wikipedia.search(band_name, results=3)
-                        for index, name in enumerate(newAttempt):
-                            if name.lower() == wiki_option_selected:
-                                item_id = index
-                        wiki_url = wikipedia.page(
-                            newAttempt[item_id], auto_suggest=False
-                        ).url
-                        options2 = [
-                            {
-                                "key": "1",
-                                "name": "{} - {}".format(band_name, wiki_url),
-                                "value": wiki_url,
-                            },
-                            {"key": "0", "name": "Colocar el link", "value": False},
-                        ]
-                        link = inputs.expand(options2, "cual de estos links le funciona?")
-                    except Exception:
-                        print(
-                            "Hubo un error al buscar la pagina de wikipedia, por favor ingrese el link manualmente\n"
-                        )
+                    # try:
+                    #     newAttempt = wikipedia.search(band_name, results=3)
+                    #     for index, name in enumerate(newAttempt):
+                    #         if name.lower() == wiki_option_selected:
+                    #             item_id = index
+                    #     wiki_url = wikipedia.page(
+                    #         newAttempt[item_id], auto_suggest=False
+                    #     ).url
+                    #     options2 = [
+                    #         {
+                    #             "key": "1",
+                    #             "name": "{} - {}".format(band_name, wiki_url),
+                    #             "value": wiki_url,
+                    #         },
+                    #         {"key": "0", "name": "Colocar el link", "value": False},
+                    #     ]
+                    #     link = self.inputs.expand(options2, "cual de estos links le funciona?")
+                    # except Exception:
+                    print(
+                        "Hubo un error al buscar la pagina de wikipedia, por favor ingrese el link manualmente\n"
+                    )
         if not link:
 
             class UrlValidator(Validator):
@@ -271,7 +285,7 @@ class single_post:
                         )
 
             validation = UrlValidator
-            link = inputs.input_field("Colocar el link externo", validation)
+            link = self.inputs.input_field("Colocar el link externo", validation)
         self.external_link = link
         self.description = self.description.replace(
             band_name, add_link.format(link, band_name), 1
@@ -504,14 +518,14 @@ if __name__ == "__main__":
         "Descargar imágenes",
         "Ver Detalles de los post",
         "Salir",
-        "Post de prueba",
+        # "Post de prueba",
     ]
     scraper = scrap_facebook_post()
+    inputs = inputs_form()
     while True:
         print("-------------------------- Inicio --------------------------\n")
         # clear()
         scraper.get_current_status()
-        inputs = inputs_form()
         action = inputs.select(options, "Que acción desea realizar")
         print(
             "\n-------------------------- {} --------------------------\n".format(action)
@@ -535,56 +549,21 @@ if __name__ == "__main__":
             scraper.show_posts_details()
         elif action == "Salir".lower():
             break
-        elif action == "Post de prueba".lower():
-            # post = single_post(
-            #     "Esta es una descripción Fallece Holmes Sterling Morrison muy precisa de una banda como lo es Gun's N Roses que es muy muy buena claro que si nadie lo puede negar jejejeje lleilleilleii",
-            #     "25 agosto 1998",
-            #     "https://wikipedia.com",
-            # )
-            # post.get_title()
-            # post.get_external_link()
-            # print()
-            # print("Titulo: {} \n".format(post.title))
-            # print("Fecha: {} \n".format(post.date))
-            # print("URL de la imagen: {} \n".format(post.date))
-            # print("URL externo: {} \n".format(post.external_link))
-            # print("Dirección de la imagen guardada: {} \n".format(post.img_path))
-            # print("Descripción:")
-            # print(post.description)
-            # print("---")
-            # print("\n \n")
-
-            # print(wikipedia.search("Oasis", results=3))
-            # # try:
-            # for page in wikipedia.search("Oasis", results=3):
-            #     if not re.search("(disambiguation)", page):
-            #         print(wikipedia.summary(page, auto_suggest=False, sentences=1))
-
-            # text = "Sterling Morrison"
-            # newAttempt = wikipedia.search(text, results=3)
-            # print(newAttempt)
-            # # item_id = newAttempt.index(text)
-            # for index, name in enumerate(newAttempt):
-            #     if name.lower() == "sterling morrison":
-            #         item_id = index
-            # print(item_id)
-            # wiki_url = wikipedia.page(newAttempt[item_id], auto_suggest=False).url
-            # print(wiki_url)
-            search = wikipedia.search("Alphaville", results=3)
-            this_page_resume = list()
-            indexes_list = list()
-            for index, name in enumerate(search):
-                try:
-                    this_page_resume.append(
-                        wikipedia.summary(name, auto_suggest=False, sentences=1)
-                    )
-                    indexes_list.append(index)
-                except Exception:
-                    pass
-            print(search)
-            print(this_page_resume)
-            print(indexes_list)
-
-        # --------- proceso de minado de texto
-        # --------- subir a WordPress
-        # get_external_link()
+        # elif action == "Post de prueba".lower():
+        #     post = single_post(
+        #         "Esta es una descripción Fallece Holmes Sterling Morrison muy precisa de una banda como lo es Gun's N Roses que es muy muy buena claro que si nadie lo puede negar jejejeje lleilleilleii",
+        #         "25 agosto 1998",
+        #         "https://wikipedia.com",
+        #     )
+        #     post.get_title()
+        #     post.get_external_link()
+        #     print()
+        #     print("Titulo: {} \n".format(post.title))
+        #     print("Fecha: {} \n".format(post.date))
+        #     print("URL de la imagen: {} \n".format(post.date))
+        #     print("URL externo: {} \n".format(post.external_link))
+        #     print("Dirección de la imagen guardada: {} \n".format(post.img_path))
+        #     print("Descripción:")
+        #     print(post.description)
+        #     print("---")
+        #     print("\n \n")
