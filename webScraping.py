@@ -92,12 +92,12 @@ class inputs_form:
         answers = prompt(questions)
         return answers["it_pass"]
 
-    def expand(self, options):
+    def expand(self, options, message):
         expand_from_search = [
             {
                 "type": "expand",
                 "name": "links",
-                "message": "cual de estos links le funciona?",
+                "message": message,
                 "choices": options,
             },
         ]
@@ -126,6 +126,19 @@ class single_post:
         self.title = ""
         self.img_path = ""
         self.external_link = ""
+        self.isValid = True
+        self.inputs = inputs_form()
+
+    def is_valid(self):
+        print("Lo siguiente es un post valido? \n")
+        print("Fecha: {}".format(self.date))
+        print("Mensaje:")
+        print(self.description)
+        print()
+        response = self.inputs.confirm("Este es un post valido?")
+        if not response:
+            self.isValid = False
+        return response
 
     def get_title(self):
         class TitleValidator(Validator):
@@ -219,7 +232,7 @@ class single_post:
                         },
                         {"key": "0", "name": "Colocar el link", "value": False},
                     ]
-                    link = inputs.expand(options2)
+                    link = inputs.expand(options2, "cual de estos links le funciona?")
                 except Exception:
                     try:
                         newAttempt = wikipedia.search(band_name, results=3)
@@ -237,7 +250,7 @@ class single_post:
                             },
                             {"key": "0", "name": "Colocar el link", "value": False},
                         ]
-                        link = inputs.expand(options2)
+                        link = inputs.expand(options2, "cual de estos links le funciona?")
                     except Exception:
                         print(
                             "Hubo un error al buscar la pagina de wikipedia, por favor ingrese el link manualmente\n"
@@ -318,32 +331,67 @@ class scrap_facebook_post:
                     self.hasPost = True
             except Exception:
                 print("Un Post Incompatible ")
-        print("\nHay unos {} posts que encajan con lo solicitado".format(len(self.posts)))
+        print(
+            "\nHay unos {} posts que encajan con lo solicitado".format(
+                self.posts_length()
+            )
+        )
         print()
 
     def set_posts_titles(self):
         if self.hasPost:
-            print("hay unos {} posts\n\n".format(len(self.posts)))
-            # Inicia bucle de validacion de datos
-            for index, post in enumerate(self.posts):
-                print(
-                    "Post numero {}, {} restantes \n".format(
-                        (index + 1), (len(self.posts) - (index + 1))
+            inputs = inputs_form()
+            if self.hasLinks:
+                print("hay unos {} posts\n\n".format(self.posts_length()))
+                # Inicia bucle de validacion de datos
+                for index, post in enumerate(self.posts):
+                    print(
+                        "Post numero {}, {} restantes \n".format(
+                            (index + 1), (self.posts_length() - (index + 1))
+                        )
                     )
-                )
-                print("Lo siguiente es un post valido? /n")
-                print("Fecha: {}".format(post.date))
-                print("Mensaje:")
-                print(post.description)
-                print()
-                inputs = inputs_form()
-                if inputs.confirm("Este es un post valido?"):
-                    post.get_title()
-                    post.get_external_link()
-                else:
-                    self.posts.remove(post)
-                print("---\n\n")
-            self.hasLinks = True
+                    if post.is_valid():
+                        post.get_title()
+                        post.get_external_link()
+                    print("---\n\n")
+                self.hasLinks = True
+            else:
+                while True:
+                    posts_options = list()
+                    for index, post in enumerate(self.posts):
+                        if post.title != "":
+                            posts_options.append(
+                                {
+                                    "key": index,
+                                    "name": "Post sin titulo {}".format(index + 1),
+                                    "value": index,
+                                }
+                            )
+                        else:
+                            posts_options.append(
+                                {
+                                    "key": index,
+                                    "name": post.title,
+                                    "value": index,
+                                }
+                            )
+                    posts_options.append(
+                        {
+                            "key": 999999999,
+                            "name": "Salir",
+                            "value": "Salir",
+                        }
+                    )
+                    post_selected = inputs.expand(
+                        posts_options, "Seleccione el post que desea editar"
+                    )
+                    if post_selected != "Salir":
+                        if self.posts[post_selected].is_valid():
+                            self.posts[post_selected].get_title()
+                            self.posts[post_selected].get_external_link()
+                        print("---\n\n")
+                    else:
+                        break
         else:
             print("ERROR: Primero debe obtener los posts \n")
 
@@ -353,31 +401,34 @@ class scrap_facebook_post:
             print("Por favor espere...")
             print()
             for post in self.posts:
-                # setting path
-                path = r"./imagenes_de_worpress"
-                # setting file name
-                file_extension = post.img_url.split("/")[-1].split("?")[0].split(".")
-                file_extension = file_extension[len(file_extension) - 1]
-                file_name = "".join([post.title.replace(" ", "-"), ".", file_extension])
-                file_name = file_name.replace('"', "")
-                # show data
-                # make path
-                local_filename = "".join([path, "\\", file_name])
-                os.makedirs(os.path.dirname(local_filename), exist_ok=True)
-                # get image
-                with open(local_filename, "wb") as f:
-                    print("Descargando ", file_name)
-                    r = self.session.get(post.img_url, stream=True, verify=False)
-                    total_length = r.headers.get("content-length")
-                    dl = 0
-                    total_length = int(total_length)
-                    for chunk in r.iter_content(chunk_size=1024):
-                        dl += len(chunk)
-                        f.write(chunk)
-                        done = int(50 * dl / total_length)
-                        sys.stdout.write("\r[%s%s]" % ("█" * done, " " * (50 - done)))
-                        sys.stdout.flush()
-                print("\n")
+                if post.isValid:
+                    # setting path
+                    path = r"./imagenes_de_worpress"
+                    # setting file name
+                    file_extension = post.img_url.split("/")[-1].split("?")[0].split(".")
+                    file_extension = file_extension[len(file_extension) - 1]
+                    file_name = "".join(
+                        [post.title.replace(" ", "-"), ".", file_extension]
+                    )
+                    file_name = file_name.replace('"', "")
+                    # show data
+                    # make path
+                    local_filename = "".join([path, "\\", file_name])
+                    os.makedirs(os.path.dirname(local_filename), exist_ok=True)
+                    # get image
+                    with open(local_filename, "wb") as f:
+                        print("Descargando ", file_name)
+                        r = self.session.get(post.img_url, stream=True, verify=False)
+                        total_length = r.headers.get("content-length")
+                        dl = 0
+                        total_length = int(total_length)
+                        for chunk in r.iter_content(chunk_size=1024):
+                            dl += len(chunk)
+                            f.write(chunk)
+                            done = int(50 * dl / total_length)
+                            sys.stdout.write("\r[%s%s]" % ("█" * done, " " * (50 - done)))
+                            sys.stdout.flush()
+                    print("\n")
             print("Descarga completa")
             self.hasImages = True
         else:
@@ -413,27 +464,37 @@ class scrap_facebook_post:
             else colored(self.hasPush, "red"),
         )
         print()
-        print("Numero de posts: {} \n".format(len(self.posts))) if self.hasPost else "",
+        print(
+            "Numero de posts: {} \n".format(self.posts_length())
+        ) if self.hasPost else "",
 
     def show_posts_details(self):
         if self.hasPost:
             for index, post in enumerate(self.posts):
-                print("Post Numero {} \n".format((index + 1)))
-                print("Titulo: {}".format(post.title)) if self.hasLinks else "",
-                print("Fecha: {}".format(post.date))
-                print(
-                    "URL externo: {}".format(post.external_link)
-                ) if self.hasLinks else "",
-                print(
-                    "Dirección de la imagen guardada: {} \n".format(post.img_path)
-                ) if self.hasImages else print(),
-                print("Descripción:")
-                print(post.description)
-                print("---")
-                input()
-                print("\n \n")
+                if post.isValid:
+                    print("Post Numero {} \n".format((index + 1)))
+                    print("Titulo: {}".format(post.title)) if self.hasLinks else "",
+                    print("Fecha: {}".format(post.date))
+                    print(
+                        "URL externo: {}".format(post.external_link)
+                    ) if self.hasLinks else "",
+                    print(
+                        "Dirección de la imagen guardada: {} \n".format(post.img_path)
+                    ) if self.hasImages else print(),
+                    print("Descripción:")
+                    print(post.description)
+                    print("---")
+                    input()
+                    print("\n \n")
         else:
             print("ERROR: Primero debe obtener los posts \n")
+
+    def posts_length(self):
+        len_posts = 0
+        for post in self.posts:
+            if post.isValid == True:
+                len_posts += 1
+        return len_posts
 
 
 if __name__ == "__main__":
