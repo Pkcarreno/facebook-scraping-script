@@ -3,12 +3,9 @@
 # system management
 from __future__ import print_function, unicode_literals
 from datetime import datetime
-import enum
 import os
 import sys
-from os.path import basename
 import re
-from pathlib import Path
 import json
 from termcolor import colored
 
@@ -39,7 +36,6 @@ append_data_without_name = data["append_data_without_band"]
 append_data_without_name = append_data_without_name.encode("windows-1252").decode("utf-8")
 add_link = data["link"]
 
-wikipedia = MediaWiki()
 
 # my own condition on selecting post
 # it would match any post that began with string "(current day number) (current month)"
@@ -148,14 +144,14 @@ class single_post:
                 more_than = len(document.text) > 36
                 if more_than:
                     raise ValidationError(
-                        message="El titulo no puede contener mas de 36 caracteres, usted coloco {}.".format(
+                        message="El titulo no puede contener mas de 36 caracteres, usted escribio {}.".format(
                             len(document.text)
                         ),
                         cursor_position=len(document.text),
                     )
                 if less_than:
                     raise ValidationError(
-                        message="El titulo debe contener mas de 16 caracteres, usted coloco {}.".format(
+                        message="El titulo debe contener mas de 16 caracteres, usted escribio {}.".format(
                             len(document.text)
                         ),
                         cursor_position=len(document.text),
@@ -192,6 +188,7 @@ class single_post:
         print("Por favor, espere un momento mientras se consulta a la Wikipedia...\n")
         link = False
         try:
+            wikipedia = MediaWiki()
             artist = wikipedia.search(band_name, results=3)
         except Exception:
             artist = None
@@ -199,6 +196,7 @@ class single_post:
         if artist and len(artist) > 0:
             wiki_options = list()
             options = list()
+            key = "123"
             for index, page in enumerate(artist):
                 if not re.search("(disambiguation)", page):
                     try:
@@ -208,7 +206,7 @@ class single_post:
                         wiki_options.append([this_page_resume, page])
                         options.append(
                             {
-                                "key": index,
+                                "key": key[index],
                                 "name": page,
                                 "value": index,
                             }
@@ -224,13 +222,13 @@ class single_post:
             #
             options.append(
                 {
-                    "key": 9999999,
+                    "key": "0",
                     "name": "Colocar el link",
                     "value": "Colocar el link",
                 }
             )
             #
-            wiki_option_selected = self.inputs.select(options, "Elija la opción correcta")
+            wiki_option_selected = self.inputs.expand(options, "Elija la opción correcta")
             if wiki_option_selected != "Colocar el link".lower():
                 try:
                     wiki_url = wikipedia.page(
@@ -317,45 +315,48 @@ class scrap_facebook_post:
 
     def get_all_post(self, url):
         print("Espere un momento mientras se busca contenido... \n")
-        content = self.session.get(url, verify=False).content
-        soup = BeautifulSoup(content, "lxml")
-        posts_html = soup.find_all("div", class_="_427x")
-        # inicia el procesado de la pagina
-        for post in posts_html:
-            try:
-                new_content = post.find("div", {"data-testid": "post_message"})
-                image = post.find("img", {"class": "scaledImageFitWidth img"})
-                # comienza la busqueda de post que cumplan la condicion de iniciar con la fecha del dia
-                if re.search(post_condition(), new_content.text.strip()):
-                    # if re.search("29 Agosto", new_content.text.strip()):
-                    print("Se encontró un post!")
-                    # obtiene el texto sin la fecha
-                    description = " ".join(new_content.text.strip().split(" ")[3:])
-                    # obtiene el link de la imagen
-                    lnk = image["src"]
-                    # obtiene el año
-                    numbers = []
-                    for word in new_content.text.strip().split():
-                        if word.isdigit():
-                            numbers.append(int(word))
-                    date = "{} {}".format(post_condition(), numbers[1])
-                    # guarda objeto con datos del post
-                    self.posts.append(single_post(description, date, lnk))
-                    # informa
-                    self.hasPost = True
-            except Exception:
-                print("Un Post Incompatible ")
-        print(
-            "\nHay unos {} posts que encajan con lo solicitado".format(
-                self.posts_length()
+        try:
+            content = self.session.get(url, verify=False).content
+            soup = BeautifulSoup(content, "lxml")
+            posts_html = soup.find_all("div", class_="_427x")
+            # inicia el procesado de la pagina
+            for post in posts_html:
+                try:
+                    new_content = post.find("div", {"data-testid": "post_message"})
+                    image = post.find("img", {"class": "scaledImageFitWidth img"})
+                    # comienza la busqueda de post que cumplan la condicion de iniciar con la fecha del dia
+                    if re.search(post_condition(), new_content.text.strip()):
+                        print("Se encontró un post!")
+                        # obtiene el texto sin la fecha
+                        description = "".join(
+                            new_content.text.strip().split(" ")[3:]
+                        ).lstrip()
+                        # obtiene el link de la imagen
+                        lnk = image["src"]
+                        # obtiene el año
+                        numbers = []
+                        for word in new_content.text.strip().split():
+                            if word.isdigit():
+                                numbers.append(int(word))
+                        date = "{} {}".format(post_condition(), numbers[1])
+                        # guarda objeto con datos del post
+                        self.posts.append(single_post(description, date, lnk))
+                        # informa
+                        self.hasPost = True
+                except Exception:
+                    print("Un Post Incompatible ")
+            print(
+                "\nHay unos {} posts que encajan con lo solicitado\n".format(
+                    self.posts_length()
+                )
             )
-        )
-        print()
+        except Exception:
+            print("Hubo un error de conexion, por favor vuelva a intentar\n")
 
     def set_posts_titles(self):
         if self.hasPost:
             inputs = inputs_form()
-            if self.hasLinks:
+            if not self.hasLinks:
                 print("hay unos {} posts\n\n".format(self.posts_length()))
                 # Inicia bucle de validacion de datos
                 for index, post in enumerate(self.posts):
@@ -372,11 +373,12 @@ class scrap_facebook_post:
             else:
                 while True:
                     posts_options = list()
+                    key = "123456789abcdefghijklmnoqp"
                     for index, post in enumerate(self.posts):
                         if post.title != "":
                             posts_options.append(
                                 {
-                                    "key": index,
+                                    "key": key[index],
                                     "name": "Post sin titulo {}".format(index + 1),
                                     "value": index,
                                 }
@@ -384,14 +386,14 @@ class scrap_facebook_post:
                         else:
                             posts_options.append(
                                 {
-                                    "key": index,
+                                    "key": key[index],
                                     "name": post.title,
                                     "value": index,
                                 }
                             )
                     posts_options.append(
                         {
-                            "key": 999999999,
+                            "key": "0",
                             "name": "Salir",
                             "value": "Salir",
                         }
@@ -506,7 +508,7 @@ class scrap_facebook_post:
     def posts_length(self):
         len_posts = 0
         for post in self.posts:
-            if post.isValid == True:
+            if post.isValid:
                 len_posts += 1
         return len_posts
 
@@ -531,15 +533,9 @@ if __name__ == "__main__":
             "\n-------------------------- {} --------------------------\n".format(action)
         )
         if action == "Buscar Post en Facebook".lower():
-            if not scraper.hasPost:
-                scraper.get_all_post(posts_url)
-            else:
-                print("Nota: Usted ya posee Posts")
+            scraper.get_all_post(posts_url)
         elif action == "Asignar y validar datos".lower():
-            if not scraper.hasLinks:
-                scraper.set_posts_titles()
-            else:
-                print("Nota: Usted ya posee los Titulo")
+            scraper.set_posts_titles()
         elif action == "Descargar imágenes".lower():
             if not scraper.hasImages:
                 scraper.download_images()
