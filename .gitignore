@@ -1,7 +1,13 @@
 /data.json
 /imagenes_de_worpress
+/imagenes_de_posts
 __pycache__/FacebookPostsScraper.cpython-39.pyc
 __pycache__/helpers.cpython-39.pyc
 __pycache__/test_webScraping.cpython-39-pytest-6.2.4.pyc
 __pycache__/webScraping.cpython-39.pyc
 .vscode/settings.json
+node_modules/.yarn-integrity
+node_modules/save-dev/package.json
+node_modules/save-dev/README.md
+/html.txt
+.vscode/*
