@@ -1,6 +1,7 @@
 /data.json
 /imagenes_de_worpress
 /imagenes_de_posts
+/imágenes_de_posts
 __pycache__/FacebookPostsScraper.cpython-39.pyc
 __pycache__/helpers.cpython-39.pyc
 __pycache__/test_webScraping.cpython-39-pytest-6.2.4.pyc

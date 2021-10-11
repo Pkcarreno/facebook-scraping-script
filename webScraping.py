@@ -187,8 +187,8 @@ class single_post:
         )
 
     # verifica si el post cumple con los requisitos
-    def is_valid(self):
-        print("Lo incoming es un post valido? \n")
+    def is_valid_post(self):
+        print("Lo siguiente es un post valido? \n")
         print("Fecha: {}".format(self.date))
         print("Mensaje:")
         print(self.description)
@@ -475,7 +475,7 @@ class scraping_facebook_post:
                             (index + 1), (self.posts_length() - (index + 1))
                         )
                     )
-                    if post.is_valid():
+                    if post.is_valid_post():
                         post.get_title()
                         post.get_external_link()
                     print("---\n\n")
@@ -513,16 +513,16 @@ class scraping_facebook_post:
                         posts_options.append(
                             {
                                 "key": "a",
-                                "name": "previous",
-                                "value": "previous",
+                                "name": "anterior",
+                                "value": "anterior",
                             }
                         )
                     if incoming > 0 and incoming < len(limited_posts):
                         posts_options.append(
                             {
                                 "key": "s",
-                                "name": "incoming",
-                                "value": "incoming",
+                                "name": "siguiente",
+                                "value": "siguiente",
                             }
                         )
                     posts_options.append(
@@ -537,18 +537,18 @@ class scraping_facebook_post:
                     )
                     if post_selected == "Salir":
                         break
-                    elif post_selected == "previous":
+                    elif post_selected == "anterior":
                         first_value -= 9
                         last_value -= 9
                         incoming += 1
                         previous -= 1
-                    elif post_selected == "incoming":
+                    elif post_selected == "siguiente":
                         first_value += 9
                         last_value += 9
                         incoming -= 1
                         previous += 1
                     else:
-                        if self.posts[post_selected].is_valid():
+                        if self.posts[post_selected].is_valid_post():
                             self.posts[post_selected].get_title()
                             self.posts[post_selected].get_external_link()
                         print("---\n\n")
