@@ -22,7 +22,7 @@ De cada post tenia que tomar:
 - La descripción
 - Y la imagen
 
-Una vez obtenía da imagen debía a proceder a: 
+Una vez obtenido lo anterior debía a proceder a: 
 
 - Añadir link interno a la descripción (del propio sitio web)
 - Añadir link externo a la descripción (Mayormente Wikipedia)
