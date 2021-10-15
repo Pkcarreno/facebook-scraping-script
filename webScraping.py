@@ -301,7 +301,7 @@ class single_post:
             )
             #
             wiki_option_selected = self.inputs.expand(options, "Elija la opción correcta")
-            if wiki_option_selected != "Colocar el link".lower():
+            if wiki_option_selected != "Colocar el link":
                 try:
                     wiki_url = wikipedia.page(
                         artist[wiki_option_selected], auto_suggest=False
@@ -467,14 +467,9 @@ class scraping_facebook_post:
         if self.has_post:
             inputs = inputs_form()
             if not self.has_links:
-                print("hay unos {} posts\n\n".format(self.posts_length()))
                 # Inicia bucle de validación de datos
                 for index, post in enumerate(self.posts):
-                    print(
-                        "Post numero {}, {} restantes \n".format(
-                            (index + 1), (self.posts_length() - (index + 1))
-                        )
-                    )
+                    print("Post {} de {} \n".format((index + 1), self.posts_length()))
                     if post.is_valid_post():
                         post.get_title()
                         post.get_external_link()
@@ -517,7 +512,7 @@ class scraping_facebook_post:
                                 "value": "anterior",
                             }
                         )
-                    if incoming > 0 and incoming < len(limited_posts):
+                    if incoming > 0 and incoming < len(limited_posts) - 1:
                         posts_options.append(
                             {
                                 "key": "s",
