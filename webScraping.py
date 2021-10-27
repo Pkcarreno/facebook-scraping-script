@@ -191,7 +191,7 @@ class single_post:
         print("Lo siguiente es un post valido? \n")
         print("Fecha: {}".format(self.date))
         print("Mensaje:")
-        print(self.description)
+        print(self.originalDescription)
         print()
         response = self.inputs.confirm("Este es un post valido?")
         if response:
@@ -576,23 +576,26 @@ class scraping_facebook_post:
                     file_exists = os.path.isfile(local_filename)
                     # valida si el archivo existe
                     if not file_exists:
-                        os.makedirs(os.path.dirname(local_filename), exist_ok=True)
-                        # obtiene la imagen
-                        with open(local_filename, "wb") as f:
-                            print("En Descarga {}".format(file_name))
-                            r = self.session.get(post.img_url, stream=True, verify=False)
-                            total_length = r.headers.get("content-length")
-                            dl = 0
-                            total_length = int(total_length)
-                            for chunk in r.iter_content(chunk_size=1024):
-                                dl += len(chunk)
-                                f.write(chunk)
-                                done = int(50 * dl / total_length)
-                                sys.stdout.write(
-                                    "\r[%s%s]" % ("█" * done, " " * (50 - done))
-                                )
-                                sys.stdout.flush()
-                        print("\n")
+                        try:
+                            os.makedirs(os.path.dirname(local_filename), exist_ok=True)
+                            # obtiene la imagen
+                            with open(local_filename, "wb") as f:
+                                print("En Descarga {}".format(file_name))
+                                r = self.session.get(post.img_url, stream=True, verify=False)
+                                total_length = r.headers.get("content-length")
+                                dl = 0
+                                total_length = int(total_length)
+                                for chunk in r.iter_content(chunk_size=1024):
+                                    dl += len(chunk)
+                                    f.write(chunk)
+                                    done = int(50 * dl / total_length)
+                                    sys.stdout.write(
+                                        "\r[%s%s]" % ("█" * done, " " * (50 - done))
+                                    )
+                                    sys.stdout.flush()
+                            print("\n")
+                        except Exception:
+                            print("Ha habido un error con esta imagen")
                     else:
                         print('"{}" ya existe \n'.format(file_name))
             print("Descarga completa")
